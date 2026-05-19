@@ -40,4 +40,4 @@ fi
 find "$WP_ROOT" -type d -exec chmod 755 {} \;
 find "$WP_ROOT" -type f -exec chmod 644 {} \;
 
-echo "=== Hardening complete ==="
+echo "=== Hardening complete ===" 
