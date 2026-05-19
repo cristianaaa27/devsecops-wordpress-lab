@@ -9,7 +9,6 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  # ── Job 1: Scan the original vulnerable image ────────────────────────────
   wpscan-vulnerable:
     runs-on: ubuntu-latest
     name: Scan Vulnerable Image
@@ -115,7 +114,6 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-  # ── Job 2: Scan the hardened image ──────────────────────────────────────
   wpscan-hardened:
     runs-on: ubuntu-latest
     name: Scan Hardened Image

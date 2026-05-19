@@ -1,4 +1,3 @@
-# Base: latest WordPress on PHP 8.3 Apache (upgraded from 8.1)
 FROM wordpress:6.7.2-php8.3-apache
 
 LABEL maintainer="DevSecOps Lab"
