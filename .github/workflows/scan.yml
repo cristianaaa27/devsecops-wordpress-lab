@@ -1,0 +1,82 @@
+name: WordPress Vulnerability Scan
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:  # allows manual trigger from GitHub UI
+
+jobs:
+  wpscan:
+    runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: wordpress
+          MYSQL_USER: wpuser
+          MYSQL_PASSWORD: wppassword
+        options: >-
+          --health-cmd "mysqladmin ping --silent"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+      wordpress:
+        image: wordpress:6.4.1-php8.1-apache
+        env:
+          WORDPRESS_DB_HOST: db:3306
+          WORDPRESS_DB_USER: wpuser
+          WORDPRESS_DB_PASSWORD: wppassword
+          WORDPRESS_DB_NAME: wordpress
+        ports:
+          - 8080:80
+        options: >-
+          --health-cmd "curl -f http://localhost:80 || exit 1"
+          --health-interval 15s
+          --health-timeout 10s
+          --health-retries 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Wait for WordPress to be ready
+        run: |
+          echo "Waiting for WordPress..."
+          for i in {1..20}; do
+            if curl -s http://localhost:8080 | grep -q "WordPress"; then
+              echo "WordPress is up!"
+              break
+            fi
+            echo "Attempt $i: not ready yet, waiting 10s..."
+            sleep 10
+          done
+
+      - name: Run WPScan
+        run: |
+          docker run --rm \
+            --network host \
+            -v ${{ github.workspace }}/scans:/scans \
+            wpscanteam/wpscan \
+            --url http://localhost:8080 \
+            --enumerate vp,vt,u \
+            --plugins-detection aggressive \
+            --api-token ${{ secrets.WPSCAN_API_TOKEN }} \
+            --format json \
+            --output /scans/wpscan-latest.json \
+            || true  # don't fail the workflow if vulns are found
+
+      - name: Show vulnerability summary
+        run: |
+          echo "=== WPScan Summary ==="
+          echo "Vulnerabilities found:"
+          cat scans/wpscan-latest.json | grep -o '"title":[^,]*' | sed 's/"title"://g' | tr -d '"' || echo "No titles found"
+
+      - name: Upload scan results as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wpscan-results-${{ github.run_number }}
+          path: scans/wpscan-latest.json
+          retention-days: 30
