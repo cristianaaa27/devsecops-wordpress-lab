@@ -3,7 +3,10 @@ name: WordPress Vulnerability Scan
 on:
   push:
     branches: ["main"]
-  workflow_dispatch:  # allows manual trigger from GitHub UI
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   wpscan:
@@ -53,6 +56,7 @@ jobs:
             echo "Attempt $i: not ready yet, waiting 10s..."
             sleep 10
           done
+
       - name: Create scans directory
         run: mkdir -p ${{ github.workspace }}/scans
 
@@ -60,6 +64,7 @@ jobs:
         run: |
           docker run --rm \
             --network host \
+            --user root \
             -v ${{ github.workspace }}/scans:/scans \
             wpscanteam/wpscan \
             --url http://localhost:8080 \
@@ -68,17 +73,19 @@ jobs:
             --api-token ${{ secrets.WPSCAN_API_TOKEN }} \
             --format json \
             --output /scans/wpscan-latest.json \
-            || true  # don't fail the workflow if vulns are found
+            || true
 
-      - name: Show vulnerability summary
+      - name: Verify scan output exists
         run: |
+          echo "=== Files in scans/ ==="
+          ls -lh ${{ github.workspace }}/scans/
           echo "=== WPScan Summary ==="
-          echo "Vulnerabilities found:"
-          cat scans/wpscan-latest.json | grep -o '"title":[^,]*' | sed 's/"title"://g' | tr -d '"' || echo "No titles found"
+          cat ${{ github.workspace }}/scans/wpscan-latest.json | grep -o '"title":[^,]*' | sed 's/"title"://g' | tr -d '"' || echo "No titles found"
 
       - name: Upload scan results as artifact
         uses: actions/upload-artifact@v4
         with:
           name: wpscan-results-${{ github.run_number }}
-          path: scans/wpscan-latest.json
+          path: ${{ github.workspace }}/scans/wpscan-latest.json
+          if-no-files-found: warn
           retention-days: 30
