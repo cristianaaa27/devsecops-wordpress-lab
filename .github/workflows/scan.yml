@@ -57,22 +57,27 @@ jobs:
             sleep 10
           done
 
-          echo "Running WP-CLI to complete installation..."
-          docker run --rm \
-            --network host \
-            wordpress:cli \
-            wp core install \
-            --url=http://localhost:8080 \
-            --title="DevSecOps Lab" \
-            --admin_user=admin \
-            --admin_password=admin123 \
-            --admin_email=admin@example.com \
-            --path=/var/www/html \
-            --allow-root \
-            || echo "WP-CLI install failed or already installed"
+         echo "Installing WP-CLI inside WordPress container..."
+          docker exec $(docker ps -qf "ancestor=wordpress:6.4.1-php8.1-apache") bash -c "
+            curl -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar &&
+            chmod +x /usr/local/bin/wp
+          "
 
-          echo "Verifying WordPress is configured..."
-          curl -s http://localhost:8080 | grep -q "DevSecOps Lab" && echo "WordPress ready!" || echo "Warning: site title not found"
+
+          echo "Running WordPress install via WP-CLI..."
+          docker exec $(docker ps -qf "ancestor=wordpress:6.4.1-php8.1-apache") bash -c "
+            wp core install \
+              --url=http://localhost:8080 \
+              --title='DevSecOps Lab' \
+              --admin_user=admin \
+              --admin_password=admin123 \
+              --admin_email=admin@example.com \
+              --path=/var/www/html \
+              --allow-root
+          "
+
+          echo "Verifying..."
+          curl -s http://localhost:8080 | grep -q "DevSecOps" && echo "WordPress ready!" || echo "Still not configured"
       - name: Create scans directory
         run: mkdir -p ${{ github.workspace }}/scans
 
