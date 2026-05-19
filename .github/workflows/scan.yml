@@ -45,18 +45,34 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Wait for WordPress to be ready
+      - name: Wait for WordPress and auto-configure
         run: |
-          echo "Waiting for WordPress..."
+          echo "Waiting for WordPress to start..."
           for i in {1..20}; do
-            if curl -s http://localhost:8080 | grep -q "WordPress"; then
-              echo "WordPress is up!"
+            if curl -s http://localhost:8080 | grep -qE "WordPress|install"; then
+              echo "WordPress is responding!"
               break
             fi
-            echo "Attempt $i: not ready yet, waiting 10s..."
+            echo "Attempt $i: waiting 10s..."
             sleep 10
           done
 
+          echo "Running WP-CLI to complete installation..."
+          docker run --rm \
+            --network host \
+            wordpress:cli \
+            wp core install \
+            --url=http://localhost:8080 \
+            --title="DevSecOps Lab" \
+            --admin_user=admin \
+            --admin_password=admin123 \
+            --admin_email=admin@example.com \
+            --path=/var/www/html \
+            --allow-root \
+            || echo "WP-CLI install failed or already installed"
+
+          echo "Verifying WordPress is configured..."
+          curl -s http://localhost:8080 | grep -q "DevSecOps Lab" && echo "WordPress ready!" || echo "Warning: site title not found"
       - name: Create scans directory
         run: mkdir -p ${{ github.workspace }}/scans
 
