@@ -9,6 +9,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  # ── Job 1: Scan the original vulnerable image ────────────────────────────
   wpscan-vulnerable:
     runs-on: ubuntu-latest
     name: Scan Vulnerable Image
@@ -82,20 +83,19 @@ jobs:
       - name: Create scans directory
         run: mkdir -p ${{ github.workspace }}/scans
 
-      - name: Run WPScan on hardened image
+      - name: Run WPScan on vulnerable image
         run: |
           docker run --rm \
             --network host \
             --user root \
             -v ${{ github.workspace }}/scans:/scans \
             wpscanteam/wpscan \
-            --url http://localhost:80 \
+            --url http://localhost:8080 \
             --enumerate vp,vt,u \
             --plugins-detection aggressive \
             --api-token ${{ secrets.WPSCAN_API_TOKEN }} \
-            --random-user-agent \
             --format json \
-            --output /scans/wpscan-hardened.json \
+            --output /scans/wpscan-vulnerable.json \
             || true
 
       - name: Summary - Vulnerable image
@@ -115,6 +115,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+  # ── Job 2: Scan the hardened image ──────────────────────────────────────
   wpscan-hardened:
     runs-on: ubuntu-latest
     name: Scan Hardened Image
@@ -208,11 +209,6 @@ jobs:
             --output /scans/wpscan-hardened.json \
             || true
 
-      - name: Configure hardened WordPress via WP-CLI
-        run: |
-          docker exec hardened-wp bash -c "
-            wp core install \
-              --url=http://localhost:
       - name: Summary - Hardened image
         run: |
           echo "=== HARDENED IMAGE - Vulnerabilities Found ==="
