@@ -9,8 +9,9 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  wpscan:
+  wpscan-vulnerable:
     runs-on: ubuntu-latest
+    name: Scan Vulnerable Image
 
     services:
       db:
@@ -81,7 +82,7 @@ jobs:
       - name: Create scans directory
         run: mkdir -p ${{ github.workspace }}/scans
 
-      - name: Run WPScan
+      - name: Run WPScan on vulnerable image
         run: |
           docker run --rm \
             --network host \
@@ -93,20 +94,120 @@ jobs:
             --plugins-detection aggressive \
             --api-token ${{ secrets.WPSCAN_API_TOKEN }} \
             --format json \
-            --output /scans/wpscan-latest.json \
+            --output /scans/wpscan-vulnerable.json \
             || true
 
-      - name: Verify scan output exists
+      - name: Summary - Vulnerable image
         run: |
-          echo "=== Files in scans/ ==="
-          ls -lh ${{ github.workspace }}/scans/
-          echo "=== WPScan Summary ==="
-          cat ${{ github.workspace }}/scans/wpscan-latest.json | grep -o '"title":[^,]*' | sed 's/"title"://g' | tr -d '"' || echo "No titles found"
+          echo "=== VULNERABLE IMAGE - Vulnerabilities Found ==="
+          cat ${{ github.workspace }}/scans/wpscan-vulnerable.json \
+            | grep -o '"title":[^,]*' \
+            | sed 's/"title"://g' \
+            | tr -d '"' \
+            || echo "Could not parse vulnerabilities"
 
-      - name: Upload scan results as artifact
+      - name: Upload vulnerable scan artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wpscan-results-${{ github.run_number }}
-          path: ${{ github.workspace }}/scans/wpscan-latest.json
+          name: wpscan-vulnerable-${{ github.run_number }}
+          path: ${{ github.workspace }}/scans/wpscan-vulnerable.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  wpscan-hardened:
+    runs-on: ubuntu-latest
+    name: Scan Hardened Image
+    needs: wpscan-vulnerable
+
+    services:
+      db:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: wordpress
+          MYSQL_USER: wpuser
+          MYSQL_PASSWORD: wppassword
+        options: >-
+          --health-cmd "mysqladmin ping --silent"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Pull hardened image
+        run: docker pull ghcr.io/${{ github.repository_owner }}/hardened-wordpress:latest
+
+      - name: Start hardened WordPress container
+        run: |
+          docker run -d \
+            --name hardened-wp \
+            --network host \
+            -e WORDPRESS_DB_HOST=127.0.0.1:3306 \
+            -e WORDPRESS_DB_USER=wpuser \
+            -e WORDPRESS_DB_PASSWORD=wppassword \
+            -e WORDPRESS_DB_NAME=wordpress \
+            ghcr.io/${{ github.repository_owner }}/hardened-wordpress:latest
+
+          echo "Waiting for hardened WordPress to start..."
+          for i in {1..20}; do
+            if curl -s http://localhost:80 | grep -qE "WordPress|install|html"; then
+              echo "Hardened WordPress is responding!"
+              break
+            fi
+            echo "Attempt $i: waiting 10s..."
+            sleep 10
+          done
+
+      - name: Configure hardened WordPress via WP-CLI
+        run: |
+          docker exec hardened-wp bash -c "
+            wp core install \
+              --url=http://localhost:80 \
+              --title='DevSecOps Hardened' \
+              --admin_user=admin \
+              --admin_password=admin123 \
+              --admin_email=admin@example.com \
+              --path=/var/www/html \
+              --allow-root
+          " || echo "WP-CLI install failed or already done"
+
+      - name: Create scans directory
+        run: mkdir -p ${{ github.workspace }}/scans
+
+      - name: Run WPScan on hardened image
+        run: |
+          docker run --rm \
+            --network host \
+            --user root \
+            -v ${{ github.workspace }}/scans:/scans \
+            wpscanteam/wpscan \
+            --url http://localhost:80 \
+            --enumerate vp,vt,u \
+            --plugins-detection aggressive \
+            --api-token ${{ secrets.WPSCAN_API_TOKEN }} \
+            --format json \
+            --output /scans/wpscan-hardened.json \
+            || true
+
+      - name: Summary - Hardened image
+        run: |
+          echo "=== HARDENED IMAGE - Vulnerabilities Found ==="
+          cat ${{ github.workspace }}/scans/wpscan-hardened.json \
+            | grep -o '"title":[^,]*' \
+            | sed 's/"title"://g' \
+            | tr -d '"' \
+            || echo "Could not parse vulnerabilities"
+
+      - name: Upload hardened scan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wpscan-hardened-${{ github.run_number }}
+          path: ${{ github.workspace }}/scans/wpscan-hardened.json
           if-no-files-found: warn
           retention-days: 30
