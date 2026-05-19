@@ -83,22 +83,20 @@ jobs:
       - name: Create scans directory
         run: mkdir -p ${{ github.workspace }}/scans
 
-      - name: Run WPScan on hardened image
-                    run: |
-                      docker run --rm \
-                        --network host \
-                        --user root \
-                        -v ${{ github.workspace }}/scans:/scans \
-                        wpscanteam/wpscan \
-                        --url http://localhost:8081 \
-                        --enumerate vp,vt,u \
-                        --plugins-detection aggressive \
-                        --api-token ${{ secrets.WPSCAN_API_TOKEN }} \
-                        --random-user-agent \
-                        --force \
-                        --format json \
-                        --output /scans/wpscan-hardened.json \
-                        || true
+      - name: Run WPScan on vulnerable image
+        run: |
+          docker run --rm \
+            --network host \
+            --user root \
+            -v ${{ github.workspace }}/scans:/scans \
+            wpscanteam/wpscan \
+            --url http://localhost:8080 \
+            --enumerate vp,vt,u \
+            --plugins-detection aggressive \
+            --api-token ${{ secrets.WPSCAN_API_TOKEN }} \
+            --format json \
+            --output /scans/wpscan-vulnerable.json \
+            || true
 
       - name: Summary - Vulnerable image
         run: |
@@ -179,9 +177,6 @@ jobs:
             sleep 10
           done
 
-          echo "Final status check:"
-          curl -v http://localhost:8081 2>&1 | head -30
-
       - name: Configure hardened WordPress via WP-CLI
         run: |
           docker exec hardened-wp bash -c "
@@ -216,7 +211,7 @@ jobs:
             --plugins-detection aggressive \
             --api-token ${{ secrets.WPSCAN_API_TOKEN }} \
             --random-user-agent \
-            --ignore-main-redirect \
+            --force \
             --format json \
             --output /scans/wpscan-hardened.json \
             || true
