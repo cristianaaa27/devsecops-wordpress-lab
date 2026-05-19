@@ -10,6 +10,299 @@
     ],
     "sponsor": "Sponsored by Automattic - https://automattic.com/"
   },
-  "scan_aborted": "The remote website is up, but does not seem to be running WordPress.",
-  "target_url": "http://wordpress/"
+  "start_time": 1779174634,
+  "start_memory": 47976448,
+  "target_url": "http://172.19.70.29:8080/",
+  "target_ip": "172.19.70.29",
+  "effective_url": "http://172.19.70.29:8080/",
+  "interesting_findings": [
+    {
+      "url": "http://172.19.70.29:8080/",
+      "to_s": "Headers",
+      "type": "headers",
+      "found_by": "Headers (Passive Detection)",
+      "confidence": 100,
+      "confirmed_by": {
+
+      },
+      "references": {
+
+      },
+      "interesting_entries": [
+        "Server: Apache/2.4.57 (Debian)",
+        "X-Powered-By: PHP/8.1.26"
+      ]
+    },
+    {
+      "url": "http://172.19.70.29:8080/xmlrpc.php",
+      "to_s": "XML-RPC seems to be enabled: http://172.19.70.29:8080/xmlrpc.php",
+      "type": "xmlrpc",
+      "found_by": "Direct Access (Aggressive Detection)",
+      "confidence": 100,
+      "confirmed_by": {
+
+      },
+      "references": {
+        "url": [
+          "http://codex.wordpress.org/XML-RPC_Pingback_API"
+        ],
+        "metasploit": [
+          "auxiliary/scanner/http/wordpress_ghost_scanner",
+          "auxiliary/dos/http/wordpress_xmlrpc_dos",
+          "auxiliary/scanner/http/wordpress_xmlrpc_login",
+          "auxiliary/scanner/http/wordpress_pingback_access"
+        ]
+      },
+      "interesting_entries": [
+
+      ]
+    },
+    {
+      "url": "http://172.19.70.29:8080/readme.html",
+      "to_s": "WordPress readme found: http://172.19.70.29:8080/readme.html",
+      "type": "readme",
+      "found_by": "Direct Access (Aggressive Detection)",
+      "confidence": 100,
+      "confirmed_by": {
+
+      },
+      "references": {
+
+      },
+      "interesting_entries": [
+
+      ]
+    },
+    {
+      "url": "http://172.19.70.29:8080/wp-cron.php",
+      "to_s": "The external WP-Cron seems to be enabled: http://172.19.70.29:8080/wp-cron.php",
+      "type": "wp_cron",
+      "found_by": "Direct Access (Aggressive Detection)",
+      "confidence": 60,
+      "confirmed_by": {
+
+      },
+      "references": {
+        "url": [
+          "https://www.iplocation.net/defend-wordpress-from-ddos",
+          "https://github.com/wpscanteam/wpscan/issues/1299"
+        ]
+      },
+      "interesting_entries": [
+
+      ]
+    }
+  ],
+  "version": {
+    "number": "6.4.1",
+    "release_date": "2023-11-09",
+    "status": "insecure",
+    "found_by": "Emoji Settings (Passive Detection)",
+    "confidence": 100,
+    "interesting_entries": [
+      "http://172.19.70.29:8080/, Match: 'wp-includes\\/js\\/wp-emoji-release.min.js?ver=6.4.1'"
+    ],
+    "confirmed_by": {
+      "Meta Generator (Passive Detection)": {
+        "confidence": 60,
+        "interesting_entries": [
+          "http://172.19.70.29:8080/, Match: 'WordPress 6.4.1'"
+        ]
+      }
+    },
+    "vulnerabilities": [
+      {
+        "title": "WP 6.4-6.4.1 - POP Chain",
+        "fixed_in": "6.4.2",
+        "references": {
+          "url": [
+            "https://fenrisk.com/publications/blogpost/2023/11/22/gadgets-chain-in-wordpress/"
+          ],
+          "wpvulndb": [
+            "2afcb141-c93c-4244-bde4-bf5c9759e8a3"
+          ]
+        }
+      },
+      {
+        "title": "WordPress < 6.4.3 - Deserialization of Untrusted Data",
+        "fixed_in": "6.4.3",
+        "references": {
+          "url": [
+            "https://wordpress.org/news/2024/01/wordpress-6-4-3-maintenance-and-security-release/"
+          ],
+          "wpvulndb": [
+            "5e9804e5-bbd4-4836-a5f0-b4388cc39225"
+          ]
+        }
+      },
+      {
+        "title": "WordPress < 6.4.3 - Admin+ PHP File Upload",
+        "fixed_in": "6.4.3",
+        "references": {
+          "url": [
+            "https://wordpress.org/news/2024/01/wordpress-6-4-3-maintenance-and-security-release/"
+          ],
+          "wpvulndb": [
+            "a8e12fbe-c70b-4078-9015-cf57a05bdd4a"
+          ]
+        }
+      },
+      {
+        "title": "WP < 6.5.2 - Unauthenticated Stored XSS",
+        "fixed_in": "6.4.4",
+        "references": {
+          "url": [
+            "https://wordpress.org/news/2024/04/wordpress-6-5-2-maintenance-and-security-release/"
+          ],
+          "wpvulndb": [
+            "1a5c5df1-57ee-4190-a336-b0266962078f"
+          ]
+        }
+      },
+      {
+        "title": "WordPress < 6.5.5 - Contributor+ Stored XSS in HTML API",
+        "fixed_in": "6.4.5",
+        "references": {
+          "url": [
+            "https://wordpress.org/news/2024/06/wordpress-6-5-5/"
+          ],
+          "wpvulndb": [
+            "2c63f136-4c1f-4093-9a8c-5e51f19eae28"
+          ]
+        }
+      },
+      {
+        "title": "WordPress < 6.5.5 - Contributor+ Stored XSS in Template-Part Block",
+        "fixed_in": "6.4.5",
+        "references": {
+          "url": [
+            "https://wordpress.org/news/2024/06/wordpress-6-5-5/"
+          ],
+          "wpvulndb": [
+            "7c448f6d-4531-4757-bff0-be9e3220bbbb"
+          ]
+        }
+      },
+      {
+        "title": "WordPress < 6.5.5 - Contributor+ Path Traversal in Template-Part Block",
+        "fixed_in": "6.4.5",
+        "references": {
+          "url": [
+            "https://wordpress.org/news/2024/06/wordpress-6-5-5/"
+          ],
+          "wpvulndb": [
+            "36232787-754a-4234-83d6-6ded5e80251c"
+          ]
+        }
+      },
+      {
+        "title": "WP < 6.8.3 - Author+ DOM Stored XSS",
+        "fixed_in": "6.4.7",
+        "references": {
+          "cve": [
+            "2025-58674"
+          ],
+          "url": [
+            "https://patchstack.com/database/wordpress/wordpress/wordpress/vulnerability/wordpress-wordpress-wordpress-6-8-2-cross-site-scripting-xss-vulnerability",
+            " https://wordpress.org/news/2025/09/wordpress-6-8-3-release/"
+          ],
+          "wpvulndb": [
+            "c4616b57-770f-4c40-93f8-29571c80330a"
+          ]
+        }
+      },
+      {
+        "title": "WP < 6.8.3 - Contributor+ Sensitive Data Disclosure",
+        "fixed_in": "6.4.7",
+        "references": {
+          "cve": [
+            "2025-58246"
+          ],
+          "url": [
+            "https://patchstack.com/database/wordpress/wordpress/wordpress/vulnerability/wordpress-wordpress-wordpress-6-8-2-sensitive-data-exposure-vulnerability",
+            "https://wordpress.org/news/2025/09/wordpress-6-8-3-release/"
+          ],
+          "wpvulndb": [
+            "1e2dad30-dd95-4142-903b-4d5c580eaad2"
+          ]
+        }
+      }
+    ]
+  },
+  "main_theme": null,
+  "plugins": {
+    "akismet": {
+      "slug": "akismet",
+      "location": "http://172.19.70.29:8080/wp-content/plugins/akismet/",
+      "latest_version": "5.7",
+      "last_updated": "2026-04-23T22:34:00.000Z",
+      "outdated": false,
+      "readme_url": false,
+      "directory_listing": false,
+      "error_log_url": null,
+      "found_by": "Known Locations (Aggressive Detection)",
+      "confidence": 80,
+      "interesting_entries": [
+        "http://172.19.70.29:8080/wp-content/plugins/akismet/, status: 403"
+      ],
+      "confirmed_by": {
+
+      },
+      "vulnerabilities": [
+        {
+          "title": "Akismet 2.5.0-3.1.4 - Unauthenticated Stored Cross-Site Scripting (XSS)",
+          "fixed_in": "3.1.5",
+          "references": {
+            "cve": [
+              "2015-9357"
+            ],
+            "url": [
+              "http://blog.akismet.com/2015/10/13/akismet-3-1-5-wordpress/",
+              "https://blog.sucuri.net/2015/10/security-advisory-stored-xss-in-akismet-wordpress-plugin.html"
+            ],
+            "wpvulndb": [
+              "1a2f3094-5970-4251-9ed0-ec595a0cd26c"
+            ]
+          }
+        }
+      ],
+      "version": null
+    }
+  },
+  "themes": {
+
+  },
+  "users": {
+    "admin": {
+      "id": 1,
+      "found_by": "Author Id Brute Forcing - Author Pattern (Aggressive Detection)",
+      "confidence": 100,
+      "interesting_entries": [
+
+      ],
+      "confirmed_by": {
+        "Login Error Messages (Aggressive Detection)": {
+          "confidence": 100,
+          "interesting_entries": [
+
+          ]
+        }
+      }
+    }
+  },
+  "vuln_api": {
+    "plan": "free",
+    "requests_done_during_scan": 2,
+    "requests_remaining": 23
+  },
+  "stop_time": 1779174651,
+  "elapsed": 17,
+  "requests_done": 8049,
+  "cached_requests": 6,
+  "data_sent": 2322747,
+  "data_sent_humanised": "2.215 MB",
+  "data_received": 1478586,
+  "data_received_humanised": "1.41 MB",
+  "used_memory": 327065600,
+  "used_memory_humanised": "311.914 MB"
 }
