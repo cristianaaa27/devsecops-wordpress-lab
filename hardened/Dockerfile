@@ -1,5 +1,5 @@
 FROM wordpress:6.7.2-php8.3-apache
-#ok
+
 LABEL maintainer="DevSecOps Lab"
 LABEL description="Hardened WordPress image - vulnerabilities patched"
 
