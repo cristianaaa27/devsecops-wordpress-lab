@@ -121,20 +121,6 @@ jobs:
     name: Scan Hardened Image
     needs: wpscan-vulnerable
 
-    services:
-      db:
-        image: mysql:5.7
-        env:
-          MYSQL_ROOT_PASSWORD: rootpassword
-          MYSQL_DATABASE: wordpress
-          MYSQL_USER: wpuser
-          MYSQL_PASSWORD: wppassword
-        options: >-
-          --health-cmd "mysqladmin ping --silent"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -145,12 +131,36 @@ jobs:
       - name: Pull hardened image
         run: docker pull ghcr.io/${{ github.repository_owner }}/hardened-wordpress:latest
 
+      - name: Start database
+        run: |
+          docker network create wpnet
+
+          docker run -d \
+            --name db \
+            --network wpnet \
+            -e MYSQL_ROOT_PASSWORD=rootpassword \
+            -e MYSQL_DATABASE=wordpress \
+            -e MYSQL_USER=wpuser \
+            -e MYSQL_PASSWORD=wppassword \
+            mysql:5.7
+
+          echo "Waiting for MySQL to be ready..."
+          for i in {1..20}; do
+            if docker exec db mysqladmin ping --silent 2>/dev/null; then
+              echo "MySQL is ready!"
+              break
+            fi
+            echo "Attempt $i: MySQL not ready yet..."
+            sleep 10
+          done
+
       - name: Start hardened WordPress container
         run: |
           docker run -d \
             --name hardened-wp \
-            --network host \
-            -e WORDPRESS_DB_HOST=127.0.0.1:3306 \
+            --network wpnet \
+            -p 8081:80 \
+            -e WORDPRESS_DB_HOST=db:3306 \
             -e WORDPRESS_DB_USER=wpuser \
             -e WORDPRESS_DB_PASSWORD=wppassword \
             -e WORDPRESS_DB_NAME=wordpress \
@@ -158,7 +168,7 @@ jobs:
 
           echo "Waiting for hardened WordPress..."
           for i in {1..30}; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:80)
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081 2>/dev/null || echo "000")
             echo "Attempt $i: HTTP status = $STATUS"
             if [ "$STATUS" = "200" ] || [ "$STATUS" = "302" ] || [ "$STATUS" = "301" ]; then
               echo "Hardened WordPress is up!"
@@ -168,13 +178,13 @@ jobs:
           done
 
           echo "Final status check:"
-          curl -v http://localhost:80 2>&1 | head -30
+          curl -v http://localhost:8081 2>&1 | head -30
 
       - name: Configure hardened WordPress via WP-CLI
         run: |
           docker exec hardened-wp bash -c "
             wp core install \
-              --url=http://localhost:80 \
+              --url=http://localhost:8081 \
               --title='DevSecOps Hardened' \
               --admin_user=admin \
               --admin_password=admin123 \
@@ -187,7 +197,7 @@ jobs:
           sleep 15
 
           echo "Post-install status:"
-          curl -s -o /dev/null -w "HTTP Status: %{http_code}\n" http://localhost:80
+          curl -s -o /dev/null -w "HTTP Status: %{http_code}\n" http://localhost:8081
 
       - name: Create scans directory
         run: mkdir -p ${{ github.workspace }}/scans
@@ -199,7 +209,7 @@ jobs:
             --user root \
             -v ${{ github.workspace }}/scans:/scans \
             wpscanteam/wpscan \
-            --url http://localhost:80 \
+            --url http://localhost:8081 \
             --enumerate vp,vt,u \
             --plugins-detection aggressive \
             --api-token ${{ secrets.WPSCAN_API_TOKEN }} \
