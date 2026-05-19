@@ -53,7 +53,7 @@ jobs:
             echo "Attempt $i: not ready yet, waiting 10s..."
             sleep 10
           done
- - name: Create scans directory
+      - name: Create scans directory
         run: mkdir -p ${{ github.workspace }}/scans
 
       - name: Run WPScan
