@@ -57,12 +57,11 @@ jobs:
             sleep 10
           done
 
-         echo "Installing WP-CLI inside WordPress container..."
+          echo "Installing WP-CLI inside WordPress container..."
           docker exec $(docker ps -qf "ancestor=wordpress:6.4.1-php8.1-apache") bash -c "
             curl -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar &&
             chmod +x /usr/local/bin/wp
           "
-
 
           echo "Running WordPress install via WP-CLI..."
           docker exec $(docker ps -qf "ancestor=wordpress:6.4.1-php8.1-apache") bash -c "
@@ -77,8 +76,7 @@ jobs:
           "
 
           echo "Verifying..."
-          curl -s http://localhost:8080 | grep -q "DevSecOps" && echo "WordPress ready!" || echo "Still not configured"
-      - name: Create scans directory
+          curl -s http://localhost:8080 | grep -q "DevSecOps" && echo "WordPress ready!" || echo "Still not configured"- name: Create scans directory
         run: mkdir -p ${{ github.workspace }}/scans
 
       - name: Run WPScan
