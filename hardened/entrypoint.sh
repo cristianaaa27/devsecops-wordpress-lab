@@ -3,9 +3,13 @@ set -e
 
 echo "=== Starting hardened WordPress ==="
 
-docker-entrypoint.sh true 2>/dev/null || true
+# Run the original WordPress entrypoint in background to set up files
+docker-entrypoint.sh apache2-foreground &
+APACHE_PID=$!
 
+# Wait for WordPress files to be set up then apply hardening
+sleep 15
 /usr/local/bin/hardening.sh
 
-echo "=== Starting Apache ==="
-exec "$@"
+# Keep Apache running in foreground
+wait $APACHE_PID
