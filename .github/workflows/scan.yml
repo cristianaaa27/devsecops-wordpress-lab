@@ -155,15 +155,19 @@ jobs:
             -e WORDPRESS_DB_NAME=wordpress \
             ghcr.io/${{ github.repository_owner }}/hardened-wordpress:latest
 
-          echo "Waiting for hardened WordPress to start..."
-          for i in {1..20}; do
-            if curl -s http://localhost:80 | grep -qE "WordPress|install|html"; then
-              echo "Hardened WordPress is responding!"
+          echo "Waiting for hardened WordPress..."
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:80)
+            echo "Attempt $i: HTTP status = $STATUS"
+            if [ "$STATUS" = "200" ] || [ "$STATUS" = "302" ] || [ "$STATUS" = "301" ]; then
+              echo "Hardened WordPress is up!"
               break
             fi
-            echo "Attempt $i: waiting 10s..."
             sleep 10
           done
+
+          echo "Final status check:"
+          curl -v http://localhost:80 2>&1 | head -30
 
       - name: Configure hardened WordPress via WP-CLI
         run: |
@@ -177,6 +181,12 @@ jobs:
               --path=/var/www/html \
               --allow-root
           " || echo "WP-CLI install failed or already done"
+
+          echo "Waiting after WP-CLI install..."
+          sleep 15
+
+          echo "Post-install status:"
+          curl -s -o /dev/null -w "HTTP Status: %{http_code}\n" http://localhost:80
 
       - name: Create scans directory
         run: mkdir -p ${{ github.workspace }}/scans
@@ -192,10 +202,17 @@ jobs:
             --enumerate vp,vt,u \
             --plugins-detection aggressive \
             --api-token ${{ secrets.WPSCAN_API_TOKEN }} \
+            --random-user-agent \
+            --ignore-main-redirect \
             --format json \
             --output /scans/wpscan-hardened.json \
             || true
 
+      - name: Configure hardened WordPress via WP-CLI
+        run: |
+          docker exec hardened-wp bash -c "
+            wp core install \
+              --url=http://localhost:
       - name: Summary - Hardened image
         run: |
           echo "=== HARDENED IMAGE - Vulnerabilities Found ==="
